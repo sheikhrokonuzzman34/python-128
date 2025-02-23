@@ -39,3 +39,30 @@ from django.contrib.auth import logout
 def logout_view(request):
     logout(request)
     return redirect('/') 
+
+
+
+def profileupdate(request):
+
+    if request.method == 'POST':
+        u_form = UserUpdate(request.POST,instance=request.user)
+        p_form = ProfileUpdet(request.POST,request.FILES,instance=request.user.profile)
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save()
+            p_form.save()
+            messages.info(request, 'Profile details updated.')
+            return redirect('profile-page')
+
+    else:
+        u_form = UserUpdate(instance=request.user)
+        p_form = ProfileUpdet(instance=request.user.profile)       
+
+    context={
+        'u_form':u_form,
+        'p_form':p_form,
+    }     
+    return render(request,'profileupdate.html',context)
+
+
+def profile(request):
+    return render(request,'profile.html')  

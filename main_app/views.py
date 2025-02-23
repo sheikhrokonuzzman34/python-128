@@ -1,4 +1,6 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect,get_object_or_404
+from django.contrib.auth.decorators import login_required
+
 
 from .models import *
 
@@ -48,3 +50,37 @@ def contact(request):
         else:
             return redirect('contact')
     return render(request, 'main_app/contact.html')
+
+
+
+@login_required(login_url='login_page')
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    cart_item, created = Cart.objects.get_or_create(user=request.user, product=product)
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()
+    return redirect('cart')
+
+@login_required(login_url='login_page')
+def increment_cart_item(request, item_id):
+    cart_item = get_object_or_404(Cart, id=item_id, user=request.user)
+    cart_item.quantity += 1
+    cart_item.save()
+    return redirect('cart')
+
+@login_required(login_url='login_page')
+def decrement_cart_item(request, item_id):
+    cart_item = get_object_or_404(Cart, id=item_id, user=request.user)
+    if cart_item.quantity > 1:
+        cart_item.quantity -= 1
+        cart_item.save()
+    else:
+        cart_item.delete()  # Remove item if quantity is 1 and decrement is pressed
+    return redirect('cart')
+
+@login_required
+def cart(request):
+    cart_items = Cart.objects.filter(user=request.user)
+    total = sum(item.product.regular_price * item.quantity for item in cart_items)
+    return render(request, 'main_app/cart.html', {'cart_items': cart_items, 'total': total})
