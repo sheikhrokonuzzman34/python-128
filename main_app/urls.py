@@ -12,4 +12,9 @@ urlpatterns = [
     path('increment/<int:item_id>/', increment_cart_item, name='increment_cart_item'),
     path('decrement/<int:item_id>/', decrement_cart_item, name='decrement_cart_item'),
     path('cart/', cart, name='cart'),
+
+    path('wishlist/', wishlist, name='wishlist'),
+    path('add_to_wishlist/<int:product_id>/', add_to_wishlist, name='add_to_wishlist'),
+
+     path('checkout/', checkout, name='checkout'),
 ]

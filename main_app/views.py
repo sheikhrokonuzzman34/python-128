@@ -84,3 +84,71 @@ def cart(request):
     cart_items = Cart.objects.filter(user=request.user)
     total = sum(item.product.regular_price * item.quantity for item in cart_items)
     return render(request, 'main_app/cart.html', {'cart_items': cart_items, 'total': total})
+
+
+@login_required(login_url='login_page')
+def add_to_wishlist(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    Wishlist.objects.get_or_create(user=request.user, product=product)
+    return redirect('wishlist')
+
+
+@login_required(login_url='login_page')
+def wishlist(request):
+    wishlist_items = Wishlist.objects.filter(user=request.user)
+    return render(request, 'main_app/wishlist.html', {'wishlist_items': wishlist_items})
+
+
+
+@login_required
+def checkout(request):
+    if request.method == 'POST':
+        cart_items = Cart.objects.filter(user=request.user)
+        total_price = sum(item.product.regular_price * item.quantity for item in cart_items)
+
+        # Handle shipping address
+        address = request.POST.get('address')
+        city = request.POST.get('city')
+        state = request.POST.get('state')
+        delivery_area = request.POST.get('delivery_area')
+
+        # Add delivery charge
+        if delivery_area == 'inside_dhaka':
+            delivery_charge = 100
+        else:
+            delivery_charge = 150
+
+        # Add the delivery charge to the total price
+        total_price += delivery_charge
+
+        # Create order and order items
+        order = Order.objects.create(user=request.user, total_price=total_price)
+        for cart_item in cart_items:
+            OrderItem.objects.create(
+                order=order,
+                product=cart_item.product,
+                quantity=cart_item.quantity,
+                price=cart_item.product.regular_price
+            )
+
+        # Clear the cart
+        cart_items.delete()
+
+        return redirect('/', order_id=order.id)
+
+    # Calculate total price for GET requests
+    cart_items = Cart.objects.filter(user=request.user)
+    total_price = sum(item.product.regular_price * item.quantity for item in cart_items)
+
+    # Prepare context for the template
+    delivery_area_charge = {
+        'inside_dhaka': 100,
+        'outside_dhaka': 150
+    }
+
+    context = {
+        'total_price': total_price,
+        'delivery_area_charge': delivery_area_charge,
+    }
+
+    return render(request, 'main_app/checkout.html', context)
