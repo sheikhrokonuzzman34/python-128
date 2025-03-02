@@ -12,7 +12,7 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('/')
+            return redirect('login_page')
     else:
         form=RegisterForm()
     return render(request,'register.html',{'form':form})
@@ -32,7 +32,7 @@ def login_page(request):
             context = {
                 'error_message': 'Username or Password is incorrect!',
             }
-            return render(request, 'user_app/login.html', context)
+            return render(request, 'login.html', context)
     return render(request, 'login.html')
 
 from django.contrib.auth import logout
@@ -66,3 +66,47 @@ def profileupdate(request):
 
 def profile(request):
     return render(request,'profile.html')  
+
+
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.utils.encoding import force_str
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.contrib.sites.shortcuts import get_current_site
+from django.urls import reverse
+from core.settings import DEFAULT_FROM_EMAIL
+from core import settings
+
+
+# password reset
+def password_reset(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = None
+
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_link = reverse('reset_password_confirm', args=(uid, token))
+            current_site = get_current_site(request)
+            domain = current_site.domain
+
+            mail_subject = 'Password Reset Request'
+
+            message = render_to_string('reset-password-template.html', {
+                'user': user,
+                'domain': domain,
+                'reset_link': reset_link,
+            })
+
+            send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            return render(request, 'reset-password-done.html', {'email': email})
+        else:
+            return render(request, 'reset-password.html', {'error_message': 'Email not found'})
+    return render(request, 'reset-password.html')
