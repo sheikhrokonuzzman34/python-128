@@ -110,3 +110,32 @@ def password_reset(request):
         else:
             return render(request, 'reset-password.html', {'error_message': 'Email not found'})
     return render(request, 'reset-password.html')
+
+
+
+
+def password_reset_confirm(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password')
+            user.set_password(new_password)
+            user.save()
+            return redirect('password_reset_complete')
+        return render(request, 'reset-password-confirm.html')
+    else:
+        return HttpResponse('Password reset link is invalid')
+    
+
+
+def password_reset_done(request):
+    return render(request, 'reset-password-done.html')
+
+
+def password_reset_complete(request):
+    return render(request, 'reset-password-complete.html')    
