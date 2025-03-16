@@ -9,3 +9,12 @@ class ProductForm(forms.ModelForm):
             'descriptions': forms.Textarea(attrs={'rows': 3}),
             'aditional_descriptions': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name', 'img']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+        }        
